@@ -1,2 +1,3 @@
 ﻿  main.c
-  TccprojectC.vcxproj -> C:\Dev\tcc_project_c\TccProjectC\x64\Debug\TccProjectC.exe
+C:\Dev\tcc_project_c\TccprojectC\TccprojectC\main.c(44,31): warning C4244: 'inicializando': conversão de 'double' para 'float', possível perda de dados
+  TccprojectC.vcxproj -> C:\Dev\tcc_project_c\TccprojectC\x64\Debug\TccProjectC.exe
