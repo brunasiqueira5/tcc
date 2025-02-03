@@ -18,5 +18,13 @@
     <ClCompile Include="main.c">
       <Filter>Arquivos de Origem</Filter>
     </ClCompile>
+    <ClCompile Include="findTardigrado.cpp">
+      <Filter>Arquivos de Origem</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="functions.h">
+      <Filter>Arquivos de Origem</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

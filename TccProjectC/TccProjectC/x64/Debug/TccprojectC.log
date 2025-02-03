@@ -1,3 +1,4 @@
-﻿  main.c
-C:\Dev\tcc_project_c\TccprojectC\TccprojectC\main.c(44,31): warning C4244: 'inicializando': conversão de 'double' para 'float', possível perda de dados
-  TccprojectC.vcxproj -> C:\Dev\tcc_project_c\TccprojectC\x64\Debug\TccProjectC.exe
+﻿  findTardigrado.cpp
+C:\Dev\tcc_project_c\TccProjectC\TccprojectC\findTardigrado.cpp(76,51): warning C4267: 'argumento': conversão de 'size_t' para 'int', possível perda de dados
+  main.c
+  TccprojectC.vcxproj -> C:\Dev\tcc_project_c\TccProjectC\x64\Debug\TccProjectC.exe
