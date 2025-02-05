@@ -1,3 +1,4 @@
 ﻿  main.c
 C:\Dev\tcc_project_c\TccprojectC\TccprojectC\main.c(44,31): warning C4244: 'inicializando': conversão de 'double' para 'float', possível perda de dados
+C:\Dev\tcc_project_c\TccprojectC\TccprojectC\main.c(65,1): warning C4716: 'getContours': deve retornar um valor
   TccprojectC.vcxproj -> C:\Dev\tcc_project_c\TccprojectC\x64\Debug\TccProjectC.exe

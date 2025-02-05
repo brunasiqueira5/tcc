@@ -5,28 +5,29 @@
 #include <opencv2/imgproc/types_c.h>
 
 #include <stdio.h>
-#include <stdlib.h>
 
-// FunÃ§Ã£o para redimensionar e exibir imagens
+// Função para redimensionar e exibir imagens
 void showAndWaitResized(const char* windowName, IplImage* img, int width, int height) {
     // Criar uma imagem de destino com o tamanho especificado
     IplImage* resizedImg = cvCreateImage(cvSize(width, height), img->depth, img->nChannels);
-    cvResize(img, resizedImg, CV_INTER_LINEAR); // Redimensionar usando interpolaÃ§Ã£o linear
+    // Redimensionar a imagem usando interpolacao linear
+    cvResize(img, resizedImg, CV_INTER_LINEAR);
 
     // Exibir a imagem redimensionada
     cvShowImage(windowName, resizedImg);
     cvWaitKey(0);
 
-    // Liberar a memÃ³ria da imagem redimensionada
+    // Liberar a memória da imagem redimensionada
     cvReleaseImage(&resizedImg);
 };
 
-// FunÃ§Ã£o para processar contornos
+// Função para processar contornos
 char getContours(IplImage* imgDil, IplImage* img) {
+    // Criar armazenamento de memória para os contornos
     CvMemStorage* storage = cvCreateMemStorage(0);
     CvSeq* contours = NULL;
 
-    // Encontrar contornos
+    // Encontrar contornos na imagem dilatada
     int num_contours = cvFindContours(
         imgDil, storage, &contours, sizeof(CvContour),
         CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE, cvPoint(0, 0)
@@ -34,52 +35,40 @@ char getContours(IplImage* imgDil, IplImage* img) {
 
     printf("Numero de contornos encontrados: %d\n", num_contours);
 
-    // Interar sobre os contornos encontrados
+    // Iterar sobre os contornos encontrados
     for (CvSeq* current = contours; current != NULL; current = current->h_next) {
         double area = cvContourArea(current, CV_WHOLE_SEQ, 0);
-        //printf("Area do contorno: %.2f\n", area);
-        
-        //Desenha os contornos da imagem quando a area for acima ou igual a 303212.00 (valor que peguei de uma area mÃ©dia das imagens) 
-        if (area > 100) {
+
+        // Desenhar os contornos apenas se a área for maior que um valor mínimo
+        if (area > 1000) {
             float perimetro = cvArcLength(current, CV_WHOLE_SEQ, 0);
 
-            // Criar um novo armazenamento para a aproximaÃ§Ã£o do polÃ­gono
+            // Criar armazenamento para aproximação poligonal
             CvMemStorage* storage_poly = cvCreateMemStorage(0);
 
-            // Criar uma sequÃªncia para armazenar os contornos aproximados
+            // Aproximação poligonal do contorno
             CvSeq* approx = cvApproxPoly(
-                current,             // Contorno de entrada
-                sizeof(CvContour),   // Tamanho do contorno
-                storage_poly,        // Armazenamento da memÃ³ria
-                CV_POLY_APPROX_DP,   // Tipo de aproximaÃ§Ã£o (Douglas-Peucker)
-                0.0005 * perimetro,   // PrecisÃ£o da aproximaÃ§Ã£o (2% do perÃ­metro)
-                1                    // Fechar o contorno (1 = fechado, 0 = aberto)
+                current, sizeof(CvContour), storage_poly,
+                CV_POLY_APPROX_DP, 0.0005 * perimetro, 1
             );
 
             // Desenhar os contornos aproximados na imagem original
-            cvDrawContours(img, approx, CV_RGB(0, 255, 0), CV_RGB(0, 0, 255), 0, 2, 8, cvPoint(0,0));
+            cvDrawContours(img, approx, CV_RGB(0, 255, 0), CV_RGB(0, 0, 255), 0, 2, 8, cvPoint(0, 0));
 
-            // Liberar memÃ³ria do armazenamento usado
+            // Liberar memória do armazenamento
             cvReleaseMemStorage(&storage_poly);
         }
-        
     }
 
-    return(img, num_contours);
-
-    // Liberar memÃ³ria
+    // Liberar memória do armazenamento principal
     cvReleaseMemStorage(&storage);
 }
 
 int main() {
-    char imgPath[256]; 
-    int contaImg = 1; // Contador inicial para as imagens
+    char imgPath[256];
+    int contaImg = 1; // Contador de imagens
     const char* grayWindow = "Imagem em Escala de Cinza";
     const char* dilateWindow = "Imagem Dilatada";
-
-    // Criar janelas para exibir as imagens
-    //cvNamedWindow(grayWindow, CV_WINDOW_AUTOSIZE);
-    //cvNamedWindow(dilateWindow, CV_WINDOW_AUTOSIZE);
 
     while (1) {
         // Gerar o caminho da imagem
@@ -88,43 +77,57 @@ int main() {
         // Carregar a imagem original
         IplImage* img = cvLoadImage(imgPath, CV_LOAD_IMAGE_COLOR);
         if (img == NULL) {
-            //printf("Nao foi possivel carregar a imagem: %s\n", imgPath);
-            break; // Encerrar o loop ao atingir o final da sequÃªncia
+            break; // Parar se não houver mais imagens
         }
 
-        // Converter para escala de cinza
-        IplImage* imgGray = cvCreateImage(cvGetSize(img), IPL_DEPTH_8U, 1);
-        cvCvtColor(img, imgGray, CV_BGR2GRAY);
+        // Criar um kernel estruturante para operações morfológicas
+        IplConvKernel* kernel = cvCreateStructuringElementEx(5, 5, 2, 2, CV_SHAPE_RECT, NULL);
 
-        // Aplicar limiarizaÃ§Ã£o para binarizar a imagem
+        // Aplicar um desfoque para suavizar ruídos
+        IplImage* imgKernel = cvCreateImage(cvGetSize(img), IPL_DEPTH_8U, img->nChannels);
+        cvSmooth(img, imgKernel, CV_GAUSSIAN, 9, 9, 9, 9);
+        cvWaitKey(0);
+
+        // Remover ruídos externos com operação de abertura morfológica
+        IplImage* imgMorphoOpen = cvCreateImage(cvGetSize(imgKernel), IPL_DEPTH_8U, imgKernel->nChannels);
+        cvMorphologyEx(imgKernel, imgMorphoOpen, NULL, kernel, CV_MOP_OPEN, 1);
+
+        // Remover ruídos internos com operação de fechamento morfológico
+        IplImage* imgMorphoClose = cvCloneImage(imgMorphoOpen);
+        cvMorphologyEx(imgMorphoOpen, imgMorphoClose, NULL, kernel, CV_MOP_CLOSE, 1);
+
+        // Converter imagem para escala de cinza
+        IplImage* imgGray = cvCreateImage(cvGetSize(imgMorphoClose), IPL_DEPTH_8U, 1);
+        cvCvtColor(imgMorphoClose, imgGray, CV_BGR2GRAY);
+
+        // Aplicar limiarização adaptativa para binarizar a imagem
         IplImage* imgThreshold = cvCreateImage(cvGetSize(imgGray), IPL_DEPTH_8U, 1);
         cvAdaptiveThreshold(imgGray, imgThreshold, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY, 15, 1);
 
-        // Aplicar dilataÃ§Ã£o para melhorar a detecÃ§Ã£o de contornos
+        // Aplicar dilatação para melhorar a detecção de contornos
         IplImage* imgDil = cvCreateImage(cvGetSize(imgThreshold), IPL_DEPTH_8U, 1);
         cvDilate(imgThreshold, imgDil, NULL, 1);
 
+        // Processar os contornos na imagem binarizada
         getContours(imgDil, img);
 
-        // Exibir imagens redimensionadas para verificaÃ§Ã£o
-        //showAndWaitResized(grayWindow, imgGray, imgGray->width / 2, imgGray->height / 2); //  Reduzido pela metade
-        //showAndWaitResized(dilateWindow, imgDil, imgDil->width / 2, imgDil->height / 2); //  Reduzido pela metade
+        // Exibir imagem redimensionada para verificação
         showAndWaitResized(dilateWindow, img, img->width / 2, img->height / 2);
 
-        // Processar os contornos
-        
-
-        // Liberar memÃ³ria para as imagens processadas
+        // Liberar memória alocada para imagens processadas
         cvReleaseImage(&img);
+        cvReleaseImage(&imgMorphoOpen);
+        cvReleaseImage(&imgMorphoClose);
         cvReleaseImage(&imgGray);
+        cvReleaseImage(&imgKernel);
         cvReleaseImage(&imgThreshold);
         cvReleaseImage(&imgDil);
 
-        // Incrementar o contador
+        // Incrementar o contador para processar a próxima imagem
         contaImg++;
     }
 
-    // Limpar recursos
+    // Fechar todas as janelas do OpenCV
     cvDestroyAllWindows();
 
     return 0;
